@@ -1,9 +1,3 @@
-# ------------------------------------------------------------------------------
-# Copyright (c) Microsoft
-# Licensed under the MIT License.
-# Written by Bin Xiao (Bin.Xiao@microsoft.com)
-# ------------------------------------------------------------------------------
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -320,6 +314,13 @@ class PoseHighResolutionNet(nn.Module):
         self.stage4, pre_stage_channels = self._make_stage(
             self.stage4_cfg, num_channels, multi_scale_output=False)
 
+        self.mask = nn.Sequential(
+            nn.Conv2d(num_channels[0], 64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(64, momentum=BN_MOMENTUM),
+            nn.Conv2d(64, 1, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(1, momentum=BN_MOMENTUM)
+        )
+
         self.final_layer = nn.Conv2d(
             in_channels=pre_stage_channels[0],
             out_channels=cfg.MODEL.NUM_JOINTS,
@@ -453,11 +454,12 @@ class PoseHighResolutionNet(nn.Module):
                 x_list.append(self.transition3[i](y_list[-1]))
             else:
                 x_list.append(y_list[i])
+        mask = self.mask(y_list[0])
         y_list = self.stage4(x_list)
 
         x = self.final_layer(y_list[0])
 
-        return x
+        return torch.cat((x,mask), 1)
 
     def init_weights(self, pretrained=''):
         logger.info('=> init weights from normal distribution')
