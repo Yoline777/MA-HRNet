@@ -168,6 +168,7 @@ class COCODataset(JointsDataset):
             y2 = np.min((height - 1, y1 + np.max((0, h - 1))))
             if obj['area'] > 0 and x2 >= x1 and y2 >= y1:
                 obj['clean_bbox'] = [x1, y1, x2-x1, y2-y1]
+                obj['mask'] = self.coco.annToMask(obj)
                 valid_objs.append(obj)
         objs = valid_objs
 
@@ -203,6 +204,7 @@ class COCODataset(JointsDataset):
                 'joints_3d_vis': joints_3d_vis,
                 'filename': '',
                 'imgnum': 0,
+                'mask': obj['mask'],
             })
 
         return rec
